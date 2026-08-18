@@ -4,3 +4,5 @@ dist/
 .git/
 .claude/
 .windsurf/
+# Prisma generated files
+src/generated/prisma/

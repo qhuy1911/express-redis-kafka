@@ -1,9 +1,11 @@
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+
 import { AppError } from './utils/appError.js';
 import { globalErrorHandler } from './middlewares/errorHandler.js';
 import logger from './config/logger.js';
+import authRoutes from './routes/auth.routes.js';
 
 dotenv.config();
 
@@ -21,6 +23,8 @@ app.get('/health', (_req: Request, res: Response) => {
     message: 'Server is healthy',
   });
 });
+
+app.use('/api/auth', authRoutes);
 
 // Test Error Route
 app.get('/test-error', (_req: Request, _res: Response, next: NextFunction) => {
