@@ -1,11 +1,12 @@
 {
   "name": "gemini-ecommerce",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/index.js",
   "author": "Huy Nguyen <qhuy1911@gmail.com>",
   "license": "MIT",
+  "type": "module",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
+    "dev": "tsx watch src/app.ts",
     "build": "tsc",
     "start": "node dist/app.js",
     "lint": "eslint .",
@@ -32,7 +33,7 @@
     "eslint-plugin-prettier": "^5.5.6",
     "globals": "^17.11.0",
     "prettier": "^3.9.6",
-    "ts-node-dev": "^2.0.0",
+    "tsx": "^4.23.12",
     "typescript": "5.9.3",
     "typescript-eslint": "^8.67.0"
   }
