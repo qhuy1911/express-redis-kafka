@@ -3,29 +3,47 @@ import { ZodError, ZodSchema } from 'zod';
 import { AppError } from '../utils/appError.js';
 
 export const validate =
-  (schema: ZodSchema) =>
-  async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
-    try {
-      await schema.parseAsync({
-        body: req.body,
-        query: req.query,
-        params: req.params,
-      });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (schema: ZodSchema<any>) =>
+    async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
+      try {
+        const result = await schema.parseAsync({
+          body: req.body,
+          query: req.query,
+          params: req.params,
+        });
 
-      next();
-    } catch (error) {
-      if (error instanceof ZodError) {
-        const errorMessage = error.issues
-          .map((issue) => {
-            const path = issue.path.slice(1).join('.');
-            return path ? `${path}: ${issue.message}` : issue.message;
-          })
-          .join(', ');
+        if (result.body) {
+          req.body = result.body;
+        }
 
-        next(new AppError(errorMessage, 400));
-        return;
+        if (result.query) {
+          Object.defineProperty(req, 'query', {
+            value: result.query,
+            enumerable: true,
+            configurable: true,
+            writable: true,
+          });
+        }
+
+        if (result.params) {
+          req.params = result.params;
+        }
+
+        next();
+      } catch (error) {
+        if (error instanceof ZodError) {
+          const errorMessage = error.issues
+            .map((issue) => {
+              const path = issue.path.slice(1).join('.');
+              return path ? `${path}: ${issue.message}` : issue.message;
+            })
+            .join(', ');
+
+          next(new AppError(errorMessage, 400));
+          return;
+        }
+
+        next(error);
       }
-
-      next(error);
-    }
-  };
+    };
