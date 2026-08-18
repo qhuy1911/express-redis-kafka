@@ -1,9 +1,9 @@
 import bcrypt from 'bcryptjs';
 
-import prisma from '../config/db.js';
 import { AppError } from '../utils/appError.js';
 import { signToken } from '../utils/jwt.js';
 import { LoginInput, RegisterInput } from '../schemas/auth.schema.js';
+import { prisma } from '../config/db.js';
 
 export const register = async (input: RegisterInput) => {
   const { email, password, name } = input;
@@ -56,7 +56,6 @@ export const login = async (input: LoginInput) => {
 
   const accessToken = signToken({
     userId: user.id,
-    role: user.role,
   });
 
   return {
