@@ -46,9 +46,14 @@ export const findAll = async (
 
   const skip = (page - 1) * limit;
 
+  const finalFilter: Prisma.ProductWhereInput = {
+    ...filter,
+    isDeleted: false,
+  };
+
   const [products, total] = await Promise.all([
     prisma.product.findMany({
-      where: filter,
+      where: finalFilter,
       skip,
       take: limit,
       orderBy: {
@@ -56,7 +61,7 @@ export const findAll = async (
       },
     }),
 
-    prisma.product.count({ where: filter }),
+    prisma.product.count({ where: finalFilter }),
   ]);
 
   return {
@@ -74,6 +79,7 @@ export const findOne = async (identifier: string) => {
   const product = await prisma.product.findFirst({
     where: {
       OR: [{ id: identifier }, { slug: identifier }],
+      isDeleted: false,
     },
   });
 
@@ -85,8 +91,8 @@ export const findOne = async (identifier: string) => {
 };
 
 export const update = async (id: string, input: UpdateProductInput) => {
-  const existingProduct = await prisma.product.findUnique({
-    where: { id },
+  const existingProduct = await prisma.product.findFirst({
+    where: { id, isDeleted: false },
   });
 
   if (!existingProduct) {
@@ -114,15 +120,16 @@ export const update = async (id: string, input: UpdateProductInput) => {
 };
 
 export const remove = async (id: string) => {
-  const existingProduct = await prisma.product.findUnique({
-    where: { id },
+  const existingProduct = await prisma.product.findFirst({
+    where: { id, isDeleted: false },
   });
 
   if (!existingProduct) {
     throw new AppError('Product not found', 404);
   }
 
-  await prisma.product.delete({
+  await prisma.product.update({
     where: { id },
+    data: { isDeleted: true },
   });
 };
