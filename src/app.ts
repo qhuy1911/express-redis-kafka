@@ -28,7 +28,7 @@ app.get('/test-error', (_req: Request, _res: Response, next: NextFunction) => {
 });
 
 // Async Error Test
-app.get('/test-async-error', async () => {
+app.get('/test-async-error', async (_req: Request, _res: Response) => {
   throw new AppError('This is an async test error!', 400);
 });
 

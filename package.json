@@ -1,7 +1,7 @@
 {
   "name": "gemini-ecommerce",
   "version": "1.0.0",
-  "main": "dist/index.js",
+  "main": "dist/app.js",
   "author": "Huy Nguyen <qhuy1911@gmail.com>",
   "license": "MIT",
   "type": "module",
