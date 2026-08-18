@@ -6,6 +6,7 @@ import { globalErrorHandler } from './middlewares/errorHandler.js';
 import logger from './config/logger.js';
 import authRoutes from './routes/auth.routes.js';
 import { env } from './config/env.js';
+import { API_PREFIX } from './constants/api.js';
 
 const app = express();
 const PORT = env.PORT || 3000;
@@ -22,7 +23,7 @@ app.get('/health', (_req: Request, res: Response) => {
   });
 });
 
-app.use('/api/auth', authRoutes);
+app.use(`${API_PREFIX}/auth`, authRoutes);
 
 // Test Error Route
 app.get('/test-error', (_req: Request, _res: Response, next: NextFunction) => {
