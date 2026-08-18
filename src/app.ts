@@ -1,16 +1,14 @@
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 
 import { AppError } from './utils/appError.js';
 import { globalErrorHandler } from './middlewares/errorHandler.js';
 import logger from './config/logger.js';
 import authRoutes from './routes/auth.routes.js';
-
-dotenv.config();
+import { env } from './config/env.js';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = env.PORT || 3000;
 
 // Middlewares
 app.use(cors());

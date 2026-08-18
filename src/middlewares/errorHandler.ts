@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/appError.js';
 import logger from '../config/logger.js';
+import { env } from '../config/env.js';
 
 export const globalErrorHandler = (
   err: Error | AppError,
@@ -21,7 +22,7 @@ export const globalErrorHandler = (
   res.status(statusCode).json({
     status,
     message: err.message || 'Internal Server Error',
-    ...(process.env.NODE_ENV === 'development' && {
+    ...(env.NODE_ENV === 'development' && {
       stack: err.stack,
     }),
   });
