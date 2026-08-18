@@ -5,7 +5,12 @@ const globals = require('globals');
 
 module.exports = [
   {
-    ignores: ['dist/**', 'node_modules/**'],
+    ignores: [
+      'node_modules/**',
+      'dist/**',
+      'build/**',
+      'src/generated/prisma/**',
+    ],
   },
 
   js.configs.recommended,
