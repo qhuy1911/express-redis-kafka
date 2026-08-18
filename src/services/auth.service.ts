@@ -56,7 +56,6 @@ export const login = async (input: LoginInput) => {
 
   const accessToken = signToken({
     userId: user.id,
-    role: user.role,
   });
 
   return {

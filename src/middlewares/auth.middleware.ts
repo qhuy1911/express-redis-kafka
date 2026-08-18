@@ -1,8 +1,9 @@
 import { RequestHandler } from 'express';
-import { AppError } from '../utils/appError.js';
-import { verifyToken } from '../utils/jwt.js';
+
 import { prisma } from '../config/db.js';
 import { Role } from '../generated/prisma/enums.js';
+import { AppError } from '../utils/appError.js';
+import { verifyToken } from '../utils/jwt.js';
 
 export const protect: RequestHandler = async (req, _res, next) => {
   const authHeader = req.headers.authorization;
@@ -17,37 +18,27 @@ export const protect: RequestHandler = async (req, _res, next) => {
     return next(new AppError('You are not logged in', 401));
   }
 
-  let decoded;
+  const decoded = verifyToken(token);
 
-  try {
-    decoded = verifyToken(token);
-  } catch {
-    return next(new AppError('Invalid or expired token', 401));
+  const user = await prisma.user.findUnique({
+    where: { id: decoded.userId },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+    },
+  });
+
+  if (!user) {
+    return next(
+      new AppError('The user belonging to this token no longer exists', 401),
+    );
   }
 
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-      },
-    });
+  req.user = user;
 
-    if (!user) {
-      return next(
-        new AppError('The user belonging to this token no longer exists', 401),
-      );
-    }
-
-    req.user = user;
-
-    next();
-  } catch (error) {
-    next(error);
-  }
+  next();
 };
 
 export const restrictTo = (...roles: Role[]): RequestHandler => {

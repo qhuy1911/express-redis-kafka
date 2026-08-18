@@ -22,15 +22,24 @@ export const signToken = (payload: JwtPayload): string => {
 };
 
 export const verifyToken = (token: string): JwtPayload => {
-  const decoded = jwt.verify(token, JWT_SECRET);
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
 
-  if (
-    typeof decoded !== 'object' ||
-    decoded === null ||
-    typeof decoded.userId !== 'string'
-  ) {
-    throw new AppError('Invalid token', 401);
+    if (
+      typeof decoded !== 'object' ||
+      decoded === null ||
+      typeof decoded.userId !== 'string' ||
+      (decoded.role !== 'USER' && decoded.role !== 'ADMIN')
+    ) {
+      throw new AppError('Invalid token', 401);
+    }
+
+    return decoded as JwtPayload;
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    throw new AppError('Invalid or expired token', 401);
   }
-
-  return decoded as JwtPayload;
 };
