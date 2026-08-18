@@ -8,6 +8,7 @@ import { protect, restrictTo } from '../middlewares/auth.middleware.js';
 import {
   createProductSchema,
   getProductsQuerySchema,
+  productIdParamSchema,
   updateProductSchema,
 } from '../schemas/product.schema.js';
 
@@ -23,7 +24,7 @@ const router = Router();
 
 router.get('/', validate(getProductsQuerySchema), findAll);
 
-router.get('/:id', findOne);
+router.get('/:id', validate(productIdParamSchema), findOne);
 
 router.post(
   '/',
@@ -41,6 +42,12 @@ router.patch(
   update,
 );
 
-router.delete('/:id', protect, restrictTo(Role.ADMIN), remove);
+router.delete(
+  '/:id',
+  protect,
+  restrictTo(Role.ADMIN),
+  validate(productIdParamSchema),
+  remove,
+);
 
 export default router;

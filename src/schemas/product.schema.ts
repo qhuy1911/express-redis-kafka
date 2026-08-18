@@ -63,6 +63,12 @@ export const getProductsQuerySchema = z.object({
   }),
 });
 
+export const productIdParamSchema = z.object({
+  params: z.object({
+    id: z.string().min(1, 'Product ID or slug is required'),
+  }),
+});
+
 export type CreateProductInput = z.infer<typeof createProductSchema>['body'];
 
 export type UpdateProductInput = z.infer<typeof updateProductSchema>['body'];

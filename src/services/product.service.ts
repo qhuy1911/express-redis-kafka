@@ -1,3 +1,4 @@
+import { Prisma, Product } from '../generated/prisma/client.js';
 import { prisma } from '../config/db.js';
 import { AppError } from '../utils/appError.js';
 import {
@@ -5,6 +6,11 @@ import {
   GetProductsQuery,
   UpdateProductInput,
 } from '../schemas/product.schema.js';
+
+const formatProduct = (product: Product) => ({
+  ...product,
+  price: Number(product.price),
+});
 
 export const create = async (input: CreateProductInput) => {
   const existingProduct = await prisma.product.findUnique({
@@ -29,16 +35,20 @@ export const create = async (input: CreateProductInput) => {
     },
   });
 
-  return product;
+  return formatProduct(product);
 };
 
-export const findAll = async (query: GetProductsQuery) => {
+export const findAll = async (
+  query: GetProductsQuery,
+  filter: Prisma.ProductWhereInput = {},
+) => {
   const { page, limit } = query;
 
   const skip = (page - 1) * limit;
 
   const [products, total] = await Promise.all([
     prisma.product.findMany({
+      where: filter,
       skip,
       take: limit,
       orderBy: {
@@ -46,11 +56,11 @@ export const findAll = async (query: GetProductsQuery) => {
       },
     }),
 
-    prisma.product.count(),
+    prisma.product.count({ where: filter }),
   ]);
 
   return {
-    products,
+    products: products.map(formatProduct),
     pagination: {
       page,
       limit,
@@ -71,7 +81,7 @@ export const findOne = async (identifier: string) => {
     throw new AppError('Product not found', 404);
   }
 
-  return product;
+  return formatProduct(product);
 };
 
 export const update = async (id: string, input: UpdateProductInput) => {
@@ -95,10 +105,12 @@ export const update = async (id: string, input: UpdateProductInput) => {
     }
   }
 
-  return prisma.product.update({
+  const updatedProduct = await prisma.product.update({
     where: { id },
     data: input,
   });
+
+  return formatProduct(updatedProduct);
 };
 
 export const remove = async (id: string) => {
