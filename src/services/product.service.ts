@@ -13,9 +13,10 @@ const formatProduct = (product: Product) => ({
 });
 
 export const create = async (input: CreateProductInput) => {
-  const existingProduct = await prisma.product.findUnique({
+  const existingProduct = await prisma.product.findFirst({
     where: {
       slug: input.slug,
+      isDeleted: false,
     },
   });
 
@@ -104,9 +105,10 @@ export const update = async (id: string, input: UpdateProductInput) => {
   }
 
   if (input.slug && input.slug !== existingProduct.slug) {
-    const slugExists = await prisma.product.findUnique({
+    const slugExists = await prisma.product.findFirst({
       where: {
         slug: input.slug,
+        isDeleted: false,
       },
     });
 

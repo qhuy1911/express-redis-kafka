@@ -1,4 +1,6 @@
 import { Request, Response } from 'express';
+import { Prisma } from '../generated/prisma/client.js';
+import { Role } from '../generated/prisma/enums.js';
 
 import * as productService from '../services/product.service.js';
 import {
@@ -23,9 +25,13 @@ export const create = async (
 
 export const findAll = async (req: Request, res: Response): Promise<void> => {
   const query = req.query as unknown as GetProductsQuery;
-  const result = await productService.findAll(query, {
-    isPublished: true,
-  });
+
+  const filter: Prisma.ProductWhereInput = {};
+  if (req.user?.role !== Role.ADMIN) {
+    filter.isPublished = true;
+  }
+
+  const result = await productService.findAll(query, filter);
 
   res.status(200).json({
     status: 'success',
