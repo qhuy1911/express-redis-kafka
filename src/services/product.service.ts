@@ -41,6 +41,7 @@ export const create = async (input: CreateProductInput) => {
 export const findAll = async (
   query: GetProductsQuery,
   filter: Prisma.ProductWhereInput = {},
+  options: { includeDeleted?: boolean } = {},
 ) => {
   const { page, limit } = query;
 
@@ -48,8 +49,11 @@ export const findAll = async (
 
   const finalFilter: Prisma.ProductWhereInput = {
     ...filter,
-    isDeleted: false,
   };
+
+  if (!options.includeDeleted) {
+    finalFilter.isDeleted = false;
+  }
 
   const [products, total] = await Promise.all([
     prisma.product.findMany({
@@ -130,6 +134,9 @@ export const remove = async (id: string) => {
 
   await prisma.product.update({
     where: { id },
-    data: { isDeleted: true },
+    data: {
+      isDeleted: true,
+      slug: `${existingProduct.slug}-deleted-${Date.now()}`,
+    },
   });
 };
