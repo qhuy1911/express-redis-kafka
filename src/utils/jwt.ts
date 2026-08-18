@@ -28,8 +28,7 @@ export const verifyToken = (token: string): JwtPayload => {
     if (
       typeof decoded !== 'object' ||
       decoded === null ||
-      typeof decoded.userId !== 'string' ||
-      (decoded.role !== 'USER' && decoded.role !== 'ADMIN')
+      typeof decoded.userId !== 'string'
     ) {
       throw new AppError('Invalid token', 401);
     }
