@@ -4,7 +4,56 @@ import {
   UpdateCategoryInput,
 } from '../schemas/category.schema.js';
 import { AppError } from '../utils/appError.js';
+import { getOrSetCache, invlidateCache } from '../utils/cache.js';
 
+const CACHE_KEYS = {
+  ALL_CATEGORIES: 'categories:all',
+  CATEGORY_DETAIL: (idOrSlug: string) => `categories:detail:${idOrSlug}`,
+};
+
+// 1. READ ALL CATEGORIES (Cache-Aside)
+export const findAll = async () => {
+  return getOrSetCache(CACHE_KEYS.ALL_CATEGORIES, async () => {
+    return prisma.category.findMany({
+      where: {
+        isDeleted: false,
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+  });
+};
+
+// 2. READ CATEGORY BY ID OR SLUG (Cache-Aside)
+export const findByIdOrSlug = async (identifier: string) => {
+  return getOrSetCache(CACHE_KEYS.CATEGORY_DETAIL(identifier), async () => {
+    const category = await prisma.category.findFirst({
+      where: {
+        OR: [{ slug: identifier }, { id: identifier }],
+      },
+      include: {
+        products: {
+          where: {
+            isDeleted: false,
+            isPublished: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+      },
+    });
+
+    if (!category) {
+      throw new AppError('Category not found', 404);
+    }
+
+    return category;
+  });
+};
+
+// 3. CREATE CATEGORY (Invalidate Cache)
 export const create = async (input: CreateCategoryInput) => {
   const { name, slug, description } = input;
   const existingCategory = await prisma.category.findFirst({
@@ -15,51 +64,21 @@ export const create = async (input: CreateCategoryInput) => {
     throw new AppError('Category slug already exists', 409);
   }
 
-  return prisma.category.create({
+  const newCategory = prisma.category.create({
     data: {
       name,
       slug,
       description,
     },
   });
+
+  // Invalidate cache all categories
+  await invlidateCache(CACHE_KEYS.ALL_CATEGORIES);
+
+  return newCategory;
 };
 
-export const findAll = async () => {
-  return prisma.category.findMany({
-    where: {
-      isDeleted: false,
-    },
-    orderBy: {
-      name: 'asc',
-    },
-  });
-};
-
-export const findByIdOrSlug = async (identifier: string) => {
-  const category = await prisma.category.findFirst({
-    where: {
-      OR: [{ slug: identifier }, { id: identifier }],
-    },
-    include: {
-      products: {
-        where: {
-          isDeleted: false,
-          isPublished: true,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      },
-    },
-  });
-
-  if (!category) {
-    throw new AppError('Category not found', 404);
-  }
-
-  return category;
-};
-
+// 4. UPDATE CATEGORY (Invalidate Cache)
 export const update = async (id: string, input: UpdateCategoryInput) => {
   const category = await prisma.category.findFirst({
     where: {
@@ -82,14 +101,20 @@ export const update = async (id: string, input: UpdateCategoryInput) => {
     }
   }
 
-  return prisma.category.update({
+  const updatedCategory = await prisma.category.update({
     where: {
       id,
     },
     data: input,
   });
+
+  // Invalidate cache all categories and detail category
+  await invlidateCache('categories:*');
+
+  return updatedCategory;
 };
 
+// 5. DELETE CATEGORY (Invalidate Cache)
 export const remove = async (id: string) => {
   const category = await prisma.category.findFirst({
     where: {
@@ -113,7 +138,7 @@ export const remove = async (id: string) => {
     throw new AppError('Cannot delete category containing products', 409);
   }
 
-  return prisma.category.update({
+  await prisma.category.update({
     where: {
       id,
     },
@@ -121,4 +146,7 @@ export const remove = async (id: string) => {
       isDeleted: true,
     },
   });
+
+  // Invalidate cache all categories and detail category
+  await invlidateCache('categories:*');
 };

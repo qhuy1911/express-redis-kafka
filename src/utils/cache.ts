@@ -21,5 +21,31 @@ export const getOrSetCache = async <T>(
     console.error(`[Redis Get Error] Key: ${key}`, error);
   }
 
-  const 
+  // Cache miss or Redis fails, fetch fresh data from DB and cache it.
+  const freshData = await fetchFn();
+
+  if (freshData !== null && freshData !== undefined) {
+    try {
+      await redis.set(key, JSON.stringify(freshData), 'EX', ttlInSeconds);
+    } catch (error) {
+      // If Redis set fails, log the error but still return the fresh data.
+      console.error(`[Redis Set Error] Key: ${key}`, error);
+    }
+  }
+
+  return freshData;
+};
+
+/**
+ * Remove cache by key or pattern
+ */
+export const invlidateCache = async (pattern: string) => {
+  try {
+    const keys = await redis.keys(pattern);
+    if (keys.length > 0) {
+      await redis.del(...keys);
+    }
+  } catch (error) {
+    console.error(`[Redis Invalidate Error] Pattern: ${pattern}`, error);
+  }
 };
