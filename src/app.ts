@@ -8,6 +8,7 @@ import { env } from './config/env.js';
 import { API_PREFIX } from './constants/api.js';
 import authRoutes from './routes/auth.routes.js';
 import productRoutes from './routes/product.routes.js';
+import categoryRoutes from './routes/category.routes.js';
 
 const app = express();
 const PORT = env.PORT || 3000;
@@ -26,6 +27,7 @@ app.get('/health', (_req: Request, res: Response) => {
 
 app.use(`${API_PREFIX}/auth`, authRoutes);
 app.use(`${API_PREFIX}/products`, productRoutes);
+app.use(`${API_PREFIX}/categories`, categoryRoutes);
 
 // Test Error Route
 app.get('/test-error', (_req: Request, _res: Response, next: NextFunction) => {

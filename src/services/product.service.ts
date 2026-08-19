@@ -33,6 +33,7 @@ export const create = async (input: CreateProductInput) => {
       stock: input.stock,
       images: input.images,
       isPublished: input.isPublished,
+      categoryId: input.categoryId,
     },
   });
 

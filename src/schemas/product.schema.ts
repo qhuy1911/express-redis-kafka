@@ -26,6 +26,8 @@ export const createProductSchema = z.object({
     images: z.array(z.string().url()).default([]),
 
     isPublished: z.boolean().default(false),
+
+    categoryId: z.string().uuid(),
   }),
 });
 
@@ -49,6 +51,8 @@ export const updateProductSchema = z.object({
       images: z.array(z.string().url()).optional(),
 
       isPublished: z.boolean().optional(),
+
+      categoryId: z.string().uuid().optional(),
     })
     .refine((data) => Object.keys(data).length > 0, {
       message: 'At least one field is required',
