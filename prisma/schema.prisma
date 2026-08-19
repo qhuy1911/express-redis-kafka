@@ -28,17 +28,17 @@ model User {
 }
 
 model Category {
-  id          String     @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String
-  slug        String     @unique
+  slug        String  @unique
   description String?
 
-  isDeleted   Boolean    @default(false)
+  isDeleted Boolean @default(false)
 
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  products    Product[]
+  products Product[]
 }
 
 model Product {
@@ -51,10 +51,27 @@ model Product {
   images      String[]
   isPublished Boolean  @default(false)
 
-  categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id])
+  variants ProductVariant[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  isDeleted   Boolean  @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  isDeleted  Boolean   @default(false)
+  category   Category? @relation(fields: [categoryId], references: [id])
+  categoryId String?
+}
+
+model ProductVariant {
+  id         String  @id @default(uuid())
+  productId  String
+  sku        String  @unique
+  price      Decimal
+  stock      Int     @default(0)
+  attributes Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
 }
