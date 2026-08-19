@@ -66,7 +66,11 @@ export const findAll = async (
         createdAt: 'desc',
       },
       include: {
-        variants: true,
+        variants: {
+          where: {
+            isDeleted: false,
+          },
+        },
       },
     }),
 
@@ -91,7 +95,11 @@ export const findOne = async (identifier: string) => {
       isDeleted: false,
     },
     include: {
-      variants: true,
+      variants: {
+        where: {
+          isDeleted: false,
+        },
+      },
     },
   });
 

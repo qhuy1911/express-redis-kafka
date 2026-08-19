@@ -57,6 +57,10 @@ export const addItem = async (
   const variant = await prisma.productVariant.findUnique({
     where: {
       id: variantId,
+      isDeleted: false,
+      product: {
+        isDeleted: false,
+      },
     },
   });
 

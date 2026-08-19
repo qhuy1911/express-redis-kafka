@@ -68,6 +68,7 @@ export const getProductVariants = async (productId: string) => {
   return prisma.productVariant.findMany({
     where: {
       productId,
+      isDeleted: false,
     },
     orderBy: {
       createdAt: 'desc',
@@ -79,6 +80,7 @@ export const getVariantById = async (id: string) => {
   const variant = await prisma.productVariant.findUnique({
     where: {
       id,
+      isDeleted: false,
     },
     include: {
       product: {
@@ -86,12 +88,17 @@ export const getVariantById = async (id: string) => {
           id: true,
           name: true,
           slug: true,
+          isDeleted: true,
         },
       },
     },
   });
 
   if (!variant) {
+    throw new AppError('Product variant not found', 404);
+  }
+
+  if (!variant || variant.product.isDeleted) {
     throw new AppError('Product variant not found', 404);
   }
 
@@ -156,9 +163,10 @@ export const deleteVariant = async (id: string) => {
     throw new AppError('Product variant not found', 404);
   }
 
-  await prisma.productVariant.delete({
-    where: {
-      id,
+  await prisma.productVariant.update({
+    where: { id },
+    data: {
+      isDeleted: true,
     },
   });
 };
