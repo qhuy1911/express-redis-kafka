@@ -65,6 +65,9 @@ export const findAll = async (
       orderBy: {
         createdAt: 'desc',
       },
+      include: {
+        variants: true,
+      },
     }),
 
     prisma.product.count({ where: finalFilter }),
@@ -86,6 +89,9 @@ export const findOne = async (identifier: string) => {
     where: {
       OR: [{ id: identifier }, { slug: identifier }],
       isDeleted: false,
+    },
+    include: {
+      variants: true,
     },
   });
 
