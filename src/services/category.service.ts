@@ -7,8 +7,8 @@ import { AppError } from '../utils/appError.js';
 
 export const create = async (input: CreateCategoryInput) => {
   const { name, slug, description } = input;
-  const existingCategory = await prisma.category.findUnique({
-    where: { slug },
+  const existingCategory = await prisma.category.findFirst({
+    where: { slug, isDeleted: false },
   });
 
   if (existingCategory) {
@@ -73,10 +73,8 @@ export const update = async (id: string, input: UpdateCategoryInput) => {
   }
 
   if (input.slug && input.slug !== category.slug) {
-    const existingCategory = await prisma.category.findUnique({
-      where: {
-        slug: input.slug,
-      },
+    const existingCategory = await prisma.category.findFirst({
+      where: { slug: input.slug, isDeleted: false },
     });
 
     if (existingCategory) {
