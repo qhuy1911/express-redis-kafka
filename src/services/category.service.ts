@@ -4,7 +4,7 @@ import {
   UpdateCategoryInput,
 } from '../schemas/category.schema.js';
 import { AppError } from '../utils/appError.js';
-import { getOrSetCache, invlidateCache } from '../utils/cache.js';
+import { getOrSetCache, invalidateCache } from '../utils/cache.js';
 
 const CACHE_KEYS = {
   ALL_CATEGORIES: 'categories:all',
@@ -64,7 +64,7 @@ export const create = async (input: CreateCategoryInput) => {
     throw new AppError('Category slug already exists', 409);
   }
 
-  const newCategory = prisma.category.create({
+  const newCategory = await prisma.category.create({
     data: {
       name,
       slug,
@@ -73,7 +73,7 @@ export const create = async (input: CreateCategoryInput) => {
   });
 
   // Invalidate cache all categories
-  await invlidateCache(CACHE_KEYS.ALL_CATEGORIES);
+  await invalidateCache(CACHE_KEYS.ALL_CATEGORIES);
 
   return newCategory;
 };
@@ -109,7 +109,7 @@ export const update = async (id: string, input: UpdateCategoryInput) => {
   });
 
   // Invalidate cache all categories and detail category
-  await invlidateCache('categories:*');
+  await invalidateCache('categories:*');
 
   return updatedCategory;
 };
@@ -148,5 +148,5 @@ export const remove = async (id: string) => {
   });
 
   // Invalidate cache all categories and detail category
-  await invlidateCache('categories:*');
+  await invalidateCache('categories:*');
 };

@@ -1,6 +1,6 @@
 import { redis } from '../config/redis.js';
 
-export const DEFAULT_TTL = 3600; // 3600 seconds = 1 hour
+export const DEFAULT_TTL = 3600; // 1 hour
 
 /**
  * Get or Set Cache (Cache-Aside Helper)
@@ -37,9 +37,9 @@ export const getOrSetCache = async <T>(
 };
 
 /**
- * Remove cache by key or pattern
+ * Remove cache by key pattern
  */
-export const invlidateCache = async (pattern: string) => {
+export const invalidateCache = async (pattern: string) => {
   try {
     const keys = await redis.keys(pattern);
     if (keys.length > 0) {
