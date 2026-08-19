@@ -19,6 +19,11 @@ import {
   remove,
   update,
 } from '../controllers/product.controller.js';
+import {
+  createVariant,
+  getProductVariants,
+} from '../controllers/product-variant.controller.js';
+import { createProductVariantSchema } from '../schemas/product-variant.schema.js';
 
 const router = Router();
 
@@ -48,6 +53,21 @@ router.delete(
   restrictTo(Role.ADMIN),
   validate(productIdParamSchema),
   remove,
+);
+
+// Product variant
+router.post(
+  '/:productId/variants',
+  protect,
+  restrictTo('ADMIN'),
+  validate(createProductVariantSchema),
+  createVariant,
+);
+
+router.get(
+  '/:productId/variants',
+  validate(productIdParamSchema),
+  getProductVariants,
 );
 
 export default router;

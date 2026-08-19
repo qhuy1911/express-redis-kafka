@@ -33,6 +33,7 @@ export const create = async (input: CreateProductInput) => {
       stock: input.stock,
       images: input.images,
       isPublished: input.isPublished,
+      categoryId: input.categoryId,
     },
   });
 
@@ -64,6 +65,13 @@ export const findAll = async (
       orderBy: {
         createdAt: 'desc',
       },
+      include: {
+        variants: {
+          where: {
+            isDeleted: false,
+          },
+        },
+      },
     }),
 
     prisma.product.count({ where: finalFilter }),
@@ -85,6 +93,13 @@ export const findOne = async (identifier: string) => {
     where: {
       OR: [{ id: identifier }, { slug: identifier }],
       isDeleted: false,
+    },
+    include: {
+      variants: {
+        where: {
+          isDeleted: false,
+        },
+      },
     },
   });
 
