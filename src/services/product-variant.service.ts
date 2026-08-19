@@ -2,6 +2,13 @@ import { Prisma } from '../generated/prisma/client.js';
 
 import { prisma } from '../config/db.js';
 import { AppError } from '../utils/appError.js';
+import { getOrSetCache, invalidateCache } from '../utils/cache.js';
+
+const CACHE_KEYS = {
+  PRODUCT_VARIANTS: (productId: string) =>
+    `product_variants:product:${productId}`,
+  VARIANT_DETAIL: (id: string) => `product_variants:detail:${id}`,
+};
 
 interface CreateVariantInput {
   productId: string;
@@ -42,7 +49,7 @@ export const createVariant = async (input: CreateVariantInput) => {
     throw new AppError('SKU is already registered', 409);
   }
 
-  return prisma.productVariant.create({
+  const newVariant = await prisma.productVariant.create({
     data: {
       productId,
       sku,
@@ -51,58 +58,67 @@ export const createVariant = async (input: CreateVariantInput) => {
       attributes,
     },
   });
+
+  await invalidateCache('product_variants:*');
+  await invalidateCache('products:*');
+
+  return newVariant;
 };
 
 export const getProductVariants = async (productId: string) => {
-  const product = await prisma.product.findFirst({
-    where: {
-      id: productId,
-      isDeleted: false,
-    },
-  });
+  return getOrSetCache(CACHE_KEYS.PRODUCT_VARIANTS(productId), async () => {
+    const product = await prisma.product.findFirst({
+      where: {
+        id: productId,
+        isDeleted: false,
+      },
+    });
 
-  if (!product) {
-    throw new AppError('Product not found', 404);
-  }
+    if (!product) {
+      throw new AppError('Product not found', 404);
+    }
 
-  return prisma.productVariant.findMany({
-    where: {
-      productId,
-      isDeleted: false,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
+    return prisma.productVariant.findMany({
+      where: {
+        productId,
+        isDeleted: false,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
   });
 };
 
 export const getVariantById = async (id: string) => {
-  const variant = await prisma.productVariant.findUnique({
-    where: {
-      id,
-      isDeleted: false,
-    },
-    include: {
-      product: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          isDeleted: true,
+  return getOrSetCache(CACHE_KEYS.VARIANT_DETAIL(id), async () => {
+    const variant = await prisma.productVariant.findUnique({
+      where: {
+        id,
+        isDeleted: false,
+      },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            isDeleted: true,
+          },
         },
       },
-    },
+    });
+
+    if (!variant) {
+      throw new AppError('Product variant not found', 404);
+    }
+
+    if (variant.product.isDeleted) {
+      throw new AppError('Product variant not found', 404);
+    }
+
+    return variant;
   });
-
-  if (!variant) {
-    throw new AppError('Product variant not found', 404);
-  }
-
-  if (!variant || variant.product.isDeleted) {
-    throw new AppError('Product variant not found', 404);
-  }
-
-  return variant;
 };
 
 export const updateVariant = async (id: string, input: UpdateVariantInput) => {
@@ -128,7 +144,7 @@ export const updateVariant = async (id: string, input: UpdateVariantInput) => {
     }
   }
 
-  return prisma.productVariant.update({
+  const updatedVariant = await prisma.productVariant.update({
     where: {
       id,
     },
@@ -150,6 +166,11 @@ export const updateVariant = async (id: string, input: UpdateVariantInput) => {
       }),
     },
   });
+
+  await invalidateCache('product_variants:*');
+  await invalidateCache('products:*');
+
+  return updatedVariant;
 };
 
 export const deleteVariant = async (id: string) => {
@@ -169,4 +190,7 @@ export const deleteVariant = async (id: string) => {
       isDeleted: true,
     },
   });
+
+  await invalidateCache('product_variants:*');
+  await invalidateCache('products:*');
 };

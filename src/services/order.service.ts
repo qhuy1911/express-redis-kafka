@@ -1,8 +1,9 @@
 import { prisma } from '../config/db.js';
 import { AppError } from '../utils/appError.js';
+import { invalidateCache } from '../utils/cache.js';
 
 export const createOrder = async (userId: string) => {
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const cart = await tx.cart.findUnique({
       where: {
         userId,
@@ -93,4 +94,9 @@ export const createOrder = async (userId: string) => {
 
     return order;
   });
+
+  await invalidateCache('product_variants:*');
+  await invalidateCache('products:*');
+
+  return result;
 };

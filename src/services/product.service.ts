@@ -1,11 +1,19 @@
 import { Prisma, Product } from '../generated/prisma/client.js';
 import { prisma } from '../config/db.js';
 import { AppError } from '../utils/appError.js';
+import { getOrSetCache, invalidateCache } from '../utils/cache.js';
 import {
   CreateProductInput,
   GetProductsQuery,
   UpdateProductInput,
 } from '../schemas/product.schema.js';
+
+const CACHE_KEYS = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  PRODUCTS_QUERY: (query: any, filter: any, options: any) =>
+    `products:query:${JSON.stringify({ query, filter, options })}`,
+  PRODUCT_DETAIL: (identifier: string) => `products:detail:${identifier}`,
+};
 
 const formatProduct = (product: Product) => ({
   ...product,
@@ -37,6 +45,8 @@ export const create = async (input: CreateProductInput) => {
     },
   });
 
+  await invalidateCache('products:*');
+
   return formatProduct(product);
 };
 
@@ -45,25 +55,60 @@ export const findAll = async (
   filter: Prisma.ProductWhereInput = {},
   options: { includeDeleted?: boolean } = {},
 ) => {
-  const { page, limit } = query;
+  return getOrSetCache(
+    CACHE_KEYS.PRODUCTS_QUERY(query, filter, options),
+    async () => {
+      const { page, limit } = query;
 
-  const skip = (page - 1) * limit;
+      const skip = (page - 1) * limit;
 
-  const finalFilter: Prisma.ProductWhereInput = {
-    ...filter,
-  };
+      const finalFilter: Prisma.ProductWhereInput = {
+        ...filter,
+      };
 
-  if (!options.includeDeleted) {
-    finalFilter.isDeleted = false;
-  }
+      if (!options.includeDeleted) {
+        finalFilter.isDeleted = false;
+      }
 
-  const [products, total] = await Promise.all([
-    prisma.product.findMany({
-      where: finalFilter,
-      skip,
-      take: limit,
-      orderBy: {
-        createdAt: 'desc',
+      const [products, total] = await Promise.all([
+        prisma.product.findMany({
+          where: finalFilter,
+          skip,
+          take: limit,
+          orderBy: {
+            createdAt: 'desc',
+          },
+          include: {
+            variants: {
+              where: {
+                isDeleted: false,
+              },
+            },
+          },
+        }),
+
+        prisma.product.count({ where: finalFilter }),
+      ]);
+
+      return {
+        products: products.map(formatProduct),
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    },
+  );
+};
+
+export const findOne = async (identifier: string) => {
+  return getOrSetCache(CACHE_KEYS.PRODUCT_DETAIL(identifier), async () => {
+    const product = await prisma.product.findFirst({
+      where: {
+        OR: [{ id: identifier }, { slug: identifier }],
+        isDeleted: false,
       },
       include: {
         variants: {
@@ -72,42 +117,14 @@ export const findAll = async (
           },
         },
       },
-    }),
+    });
 
-    prisma.product.count({ where: finalFilter }),
-  ]);
+    if (!product) {
+      throw new AppError('Product not found', 404);
+    }
 
-  return {
-    products: products.map(formatProduct),
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
-};
-
-export const findOne = async (identifier: string) => {
-  const product = await prisma.product.findFirst({
-    where: {
-      OR: [{ id: identifier }, { slug: identifier }],
-      isDeleted: false,
-    },
-    include: {
-      variants: {
-        where: {
-          isDeleted: false,
-        },
-      },
-    },
+    return formatProduct(product);
   });
-
-  if (!product) {
-    throw new AppError('Product not found', 404);
-  }
-
-  return formatProduct(product);
 };
 
 export const update = async (id: string, input: UpdateProductInput) => {
@@ -137,6 +154,8 @@ export const update = async (id: string, input: UpdateProductInput) => {
     data: input,
   });
 
+  await invalidateCache('products:*');
+
   return formatProduct(updatedProduct);
 };
 
@@ -156,4 +175,6 @@ export const remove = async (id: string) => {
       slug: `${existingProduct.slug}-deleted-${Date.now()}`,
     },
   });
+
+  await invalidateCache('products:*');
 };
