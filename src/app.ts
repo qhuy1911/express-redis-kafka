@@ -12,6 +12,7 @@ import categoryRoutes from './routes/category.routes.js';
 import variantRoutes from './routes/product-variant.routes.js';
 import cartRoutes from './routes/cart.routes.js';
 import orderRoutes from './routes/order.routes.js';
+import { createRateLimiter } from './middlewares/rateLimiter.js';
 
 const app = express();
 const PORT = env.PORT || 3000;
@@ -20,6 +21,15 @@ const PORT = env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// 1. Global Rate Limiter: Tối đa 100 requests / 1 phút cho mỗi IP
+const globalLimiter = createRateLimiter({
+  windowInSeconds: 60,
+  maxRequests: 100,
+  keyPrefix: 'global',
+});
+
+app.use('/api', globalLimiter);
+
 // Healthcheck Route
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
@@ -27,6 +37,15 @@ app.get('/health', (_req: Request, res: Response) => {
     message: 'Server is healthy',
   });
 });
+
+// 2. Auth Rate Limiter (Nghiêm ngặt hơn chống Brute-force): Tối đa 5 requests / 1 phút
+const authLimiter = createRateLimiter({
+  windowInSeconds: 60,
+  maxRequests: 5,
+  keyPrefix: 'auth',
+});
+
+app.use(`${API_PREFIX}/auth`, authLimiter);
 
 app.use(`${API_PREFIX}/auth`, authRoutes);
 app.use(`${API_PREFIX}/products`, productRoutes);
