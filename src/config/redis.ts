@@ -9,7 +9,7 @@ export const redis = new Redis({
   host: redisHost,
   port: redisPort,
   password: redisPassword,
-  maxRetriesPerRequest: 3,
+  maxRetriesPerRequest: null,
   retryStrategy(times) {
     const delay = Math.min(times * 50, 2000);
     return delay;

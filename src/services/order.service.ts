@@ -2,12 +2,18 @@ import { prisma } from '../config/db.js';
 import { AppError } from '../utils/appError.js';
 import { invalidateCache } from '../utils/cache.js';
 import { withLock } from '../utils/lock.js';
+import { addOrderEmailJob } from '../queues/order.queue.js';
 
 export const createOrder = async (userId: string) => {
   // 1. Lấy giỏ hàng trước để lấy danh sách variantId cần lock
   const userCart = await prisma.cart.findUnique({
     where: { userId },
     include: {
+      user: {
+        select: {
+          email: true,
+        },
+      },
       items: {
         select: {
           variantId: true,
@@ -70,6 +76,7 @@ export const createOrder = async (userId: string) => {
         });
       }
 
+      // Sau khi order được tạo thành công trong DB:
       const order = await tx.order.create({
         data: {
           userId,
@@ -121,6 +128,13 @@ export const createOrder = async (userId: string) => {
           cartId: cart.id,
         },
       });
+
+      // Đẩy Job gửi Email ngầm vào BullMQ (Không await để trả về response API ngay lập tức)
+      addOrderEmailJob({
+        orderId: order.id,
+        userEmail: userCart.user.email,
+        totalAmount: Number(order.totalAmount),
+      }).catch((err) => console.error('Failed to add order email job:', err));
 
       return order;
     });
