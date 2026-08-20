@@ -3,7 +3,7 @@ import { RequestHandler } from 'express';
 import { prisma } from '../config/db.js';
 import { Role } from '../generated/prisma/enums.js';
 import { AppError } from '../utils/appError.js';
-import { verifyToken } from '../utils/jwt.js';
+import { isTokenBlacklisted, verifyAccessToken } from '../utils/jwt.js';
 
 export const protect: RequestHandler = async (req, _res, next) => {
   const authHeader = req.headers.authorization;
@@ -18,8 +18,21 @@ export const protect: RequestHandler = async (req, _res, next) => {
     return next(new AppError('You are not logged in', 401));
   }
 
-  const decoded = verifyToken(token);
+  // 1. Kiểm tra Token xem có nằm trong Redis Blacklist (đã logout) không
+  const isBlacklisted = await isTokenBlacklisted(token);
+  if (isBlacklisted) {
+    return next(
+      new AppError(
+        'Your session has expired or token is revoked. Please log in again.',
+        401,
+      ),
+    );
+  }
 
+  // 2. Verify Access Token
+  const decoded = verifyAccessToken(token);
+
+  // 3. Kiểm tra sự tồn tại của User trong Database
   const user = await prisma.user.findUnique({
     where: { id: decoded.userId },
     select: {

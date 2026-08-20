@@ -16,8 +16,13 @@ export const env = {
   LOG_LEVEL: process.env.LOG_LEVEL || 'info',
   DATABASE_URL: process.env.DATABASE_URL,
   JWT_SECRET: process.env.JWT_SECRET,
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1d',
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '15m',
   REDIS_HOST: process.env.REDIS_HOST || 'localhost',
   REDIS_PORT: Number(process.env.REDIS_PORT) || 6379,
   REDIS_PASSWORD: process.env.REDIS_PASSWORD || undefined,
+  JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET,
+  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'refresh_secret_key',
+  JWT_ACCESS_EXPIRES_IN:
+    process.env.JWT_ACCESS_EXPIRES_IN || process.env.JWT_EXPIRES_IN,
+  JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d', // 7 ngày
 };
