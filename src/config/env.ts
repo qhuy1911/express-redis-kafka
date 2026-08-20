@@ -25,4 +25,9 @@ export const env = {
   JWT_ACCESS_EXPIRES_IN:
     process.env.JWT_ACCESS_EXPIRES_IN || process.env.JWT_EXPIRES_IN,
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d', // 7 ngày
+  SMTP_HOST: process.env.SMTP_HOST || 'smtp.gmail.com',
+  SMTP_PORT: Number(process.env.SMTP_PORT) || 587,
+  SMTP_USER: process.env.SMTP_USER || '',
+  SMTP_PASS: process.env.SMTP_PASS || '',
+  EMAIL_FROM: process.env.EMAIL_FROM || 'no-reply@ecommerce.com',
 };

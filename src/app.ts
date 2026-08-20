@@ -13,13 +13,34 @@ import variantRoutes from './routes/product-variant.routes.js';
 import cartRoutes from './routes/cart.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import { createRateLimiter } from './middlewares/rateLimiter.js';
+import { initOrderWorker } from './workers/order.worker.js';
+import { ExpressAdapter } from '@bull-board/express';
+import { createBullBoard } from '@bull-board/api';
+import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
+import { orderQueue } from './queues/order.queue.js';
 
 const app = express();
 const PORT = env.PORT || 3000;
 
+// Khởi tạo BullMQ Worker
+initOrderWorker();
+
 // Middlewares
 app.use(cors());
 app.use(express.json());
+
+// 1. Tạo Server Adapter
+const serverAdapter = new ExpressAdapter();
+serverAdapter.setBasePath('/admin/queues');
+
+// 2. Khởi tạo UI Board với danh sách Queue
+createBullBoard({
+  queues: [new BullMQAdapter(orderQueue)],
+  serverAdapter: serverAdapter,
+});
+
+// 3. Gắn Route Dashboard vào Express App
+app.use('/admin/queues', serverAdapter.getRouter());
 
 // 1. Global Rate Limiter: Tối đa 100 requests / 1 phút cho mỗi IP
 const globalLimiter = createRateLimiter({
